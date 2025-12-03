@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metal Drops - Game Accounts</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .background-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background: #000000;
+            animation: none;
+        }
+
+        .background-grid::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                linear-gradient(0deg, transparent 24%, rgba(0, 150, 255, 0.08) 25%, rgba(0, 150, 255, 0.08) 26%, transparent 27%, transparent 74%, rgba(0, 150, 255, 0.08) 75%, rgba(0, 150, 255, 0.08) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(0, 150, 255, 0.08) 25%, rgba(0, 150, 255, 0.08) 26%, transparent 27%, transparent 74%, rgba(0, 150, 255, 0.08) 75%, rgba(0, 150, 255, 0.08) 76%, transparent 77%, transparent);
+            background-size: 60px 60px;
+            animation: gridMove 25s linear infinite;
+        }
+
+        .background-grid::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(0, 100, 200, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(0, 150, 255, 0.1) 0%, transparent 40%);
+            animation: glowShift 10s ease-in-out infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(60px); }
+        }
+
+        @keyframes glowShift {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.7; }
+        }
+
+        .center-container {
+            position: relative;
+            z-index: 10;
+            margin-top: 220px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="mouse-glow"></div>
+
+<header class="topbar">
+    <div class="nav-left">
+        <div class="logo">Metal drops</div>
+        <a href="index_home.html" class="nav-item">Home</a>
+        <a href="dashboard.html" class="nav-item">Dashboard</a>
+    </div>
+    <div class="nav-right">
+        <div class="discord-profile">
+            <div class="avatar" aria-hidden="true"></div>
+            <div class="username">YourDiscord#1234</div>
+        </div>
+    </div>
+</header>
+
+<div class="center-container">
+    <span class="badge">Welcome to Metal Drops</span>
+    <h1 class="title">Premium Game Accounts</h1>
+    <p class="subtitle">Get instant access to your favorite games</p>
+    <p class="description">
+        Metal Drops offers a wide selection of game accounts with instant delivery. 
+        All accounts are guaranteed to be safe and working. Join thousands of satisfied customers.
+    </p>
+    <div class="buttons">
+        <a href="dashboard.html" class="btn primary"><span class="btn-text">View All Accounts</span></a>
+        <a href="https://discord.gg/4RgAwBa7gA" class="btn outline"><span class="btn-text">Join Discord</span></a>
+    </div>
+</div>
+
+<div class="background-grid"></div>
+
+<canvas id="snow-canvas"></canvas>
+
+<script>
+    const mouseGlow = document.querySelector('.mouse-glow');
+    
+    document.addEventListener('mousemove', (e) => {
+        mouseGlow.style.left = (e.clientX - 150) + 'px';
+        mouseGlow.style.top = (e.clientY - 150) + 'px';
+    });
+
+    // Discord OAuth Handler
+    (async function() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+
+        if (code) {
+            try {
+                // Chiama la Edge Function di Supabase
+                const response = await fetch('https://pwgkvqgitofueocbnmpv.supabase.co/functions/v1/discord-auth?code=' + code);
+                const data = await response.json();
+
+                if (data.username && data.avatar) {
+                    // Salva i dati in localStorage
+                    localStorage.setItem('discord_username', data.username);
+                    localStorage.setItem('discord_avatar', data.avatar);
+
+                    // Aggiorna la UI
+                    updateDiscordProfile(data.username, data.avatar);
+
+                    // Pulisci l'URL dal code
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            } catch (error) {
+                console.error('Errore nel login Discord:', error);
+            }
+        } else {
+            // Se non c'è un code, controlla localStorage
+            const savedUsername = localStorage.getItem('discord_username');
+            const savedAvatar = localStorage.getItem('discord_avatar');
+            if (savedUsername && savedAvatar) {
+                updateDiscordProfile(savedUsername, savedAvatar);
+            }
+        }
+    })();
+
+    function updateDiscordProfile(username, avatarUrl) {
+        const usernameEl = document.querySelector('.discord-profile .username');
+        const avatarEl = document.querySelector('.discord-profile .avatar');
+
+        if (usernameEl) {
+            usernameEl.textContent = username;
+        }
+        if (avatarEl) {
+            avatarEl.style.backgroundImage = `url('${avatarUrl}')`;
+            avatarEl.style.backgroundSize = 'cover';
+            avatarEl.style.backgroundPosition = 'center';
+        }
+    }
+</script>
+
+<!-- Snow script -->
+<script>
+    (function(){
+        const canvas = document.getElementById('snow-canvas');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let W, H;
+        let flakes = [];
+        function initFlakes(){
+            flakes.length = 0;
+            const FLAKE_COUNT = Math.max(80, Math.floor((W * H) / 50000)); // 2x higher density
+            for(let i=0;i<FLAKE_COUNT;i++){
+                flakes.push({
+                    x: Math.random()*W,
+                    y: Math.random()*H,
+                    r: 4 + Math.random()*12,
+                    vx: (Math.random()-0.5) * 0.3,
+                    vy: 0.3 + Math.random()*1.0,
+                    alpha: 0.3 + Math.random()*0.7,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.08
+                });
+            }
+        }
+        function resize(){
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+            initFlakes();
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        let mouse = {x:-9999,y:-9999, active:false};
+        window.addEventListener('mousemove', (e)=>{ mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; });
+        window.addEventListener('mouseleave', ()=>{ mouse.active=false; mouse.x=-9999; mouse.y=-9999; });
+
+        function step(){
+            ctx.clearRect(0,0,W,H);
+            for(let f of flakes){
+                // attract to mouse
+                if(mouse.active){
+                    const dx = mouse.x - f.x;
+                    const dy = mouse.y - f.y;
+                    const dist = Math.sqrt(dx*dx+dy*dy);
+                    const R = 120 + f.r*6;
+                    if(dist < R && dist > 0){
+                        const force = (1 - dist / R) * 0.9; // modest attraction
+                        f.vx += (dx/dist) * force;
+                        f.vy += (dy/dist) * force * 0.4;
+                    }
+                }
+
+                f.vx *= 0.99;
+                f.vy += 0.01;
+                f.x += f.vx;
+                f.y += f.vy;
+
+                if(f.x > W + 10) f.x = -10;
+                if(f.x < -10) f.x = W + 10;
+                if(f.y > H + 20){
+                    f.y = -10; f.x = Math.random()*W; f.vy = 0.3 + Math.random()*1.0; f.vx = (Math.random()-0.5)*0.4; f.rotation = Math.random() * Math.PI * 2;
+                }
+
+                f.rotation += f.rotationSpeed;
+
+                ctx.save();
+                ctx.translate(f.x, f.y);
+                ctx.rotate(f.rotation);
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(255,255,255,'+ (f.alpha) +')';
+                ctx.moveTo(0, -f.r*1.2);
+                ctx.lineTo(f.r*0.5, 0);
+                ctx.lineTo(0, f.r*1.2);
+                ctx.lineTo(-f.r*0.5, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+            requestAnimationFrame(step);
+        }
+        step();
+    })();
+</script>
+
+</body>
+</html>
