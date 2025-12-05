@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metal Drops - Redeem Code</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* Background grid */
+.background-grid {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    background: #000000;
+    animation: none;
+}
+.background-grid::before {
+    content: '';
+    position: absolute; top:0; left:0;
+    width:100%; height:100%;
+    background:
+        linear-gradient(0deg, transparent 24%, rgba(0, 150, 255, 0.08) 25%, rgba(0, 150, 255, 0.08) 26%, transparent 27%, transparent 74%, rgba(0, 150, 255, 0.08) 75%, rgba(0, 150, 255, 0.08) 76%, transparent 77%, transparent),
+        linear-gradient(90deg, transparent 24%, rgba(0, 150, 255, 0.08) 25%, rgba(0, 150, 255, 0.08) 26%, transparent 27%, transparent 74%, rgba(0, 150, 255, 0.08) 75%, rgba(0, 150, 255, 0.08) 76%, transparent 77%, transparent);
+    background-size: 60px 60px;
+    animation: gridMove 25s linear infinite;
+}
+.background-grid::after {
+    content: '';
+    position: absolute; top:0; left:0;
+    width:100%; height:100%;
+    background:
+        radial-gradient(circle at 20% 30%, rgba(0, 100, 200, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(0, 150, 255, 0.1) 0%, transparent 40%);
+    animation: glowShift 10s ease-in-out infinite;
+}
+@keyframes gridMove {0% {transform:translateY(0);} 100% {transform:translateY(60px);}}
+@keyframes glowShift {0%,100%{opacity:0.4;} 50%{opacity:0.7;}}
+
+/* Redeem container */
+.redeem-container {
+    position: relative; z-index: 10; margin: 150px auto 0 auto;
+    max-width: 400px; padding: 40px; background: rgba(0,0,0,0.6);
+    border-radius: 15px; box-shadow: 0 0 20px rgba(0,150,255,0.4);
+    text-align: center; color: #fff;
+}
+.redeem-container h1 { margin-bottom: 25px; font-size: 28px; }
+.redeem-container input {
+    width: 80%; padding: 12px 15px; margin-bottom: 20px;
+    border-radius: 8px; border: none; outline: none; font-size: 16px;
+}
+.redeem-container button {
+    background: linear-gradient(90deg, #00aaff, #0066ff);
+    border: none; padding: 12px 25px; font-size: 16px;
+    border-radius: 8px; color: #fff; cursor: pointer;
+    transition: 0.3s; box-shadow: 0 0 15px rgba(0,150,255,0.5);
+}
+.redeem-container button:hover {
+    transform: scale(1.05); box-shadow: 0 0 25px rgba(0,150,255,0.7);
+}
+
+/* Notification panels */
+.notification {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    padding: 15px 25px; border-radius: 10px;
+    color: #fff; font-weight: bold;
+    box-shadow: 0 0 20px rgba(0,150,255,0.5);
+    background: rgba(0,0,0,0.7); z-index: 9999;
+    animation: slideDown 0.3s ease forwards;
+}
+@keyframes slideDown { 0% {opacity:0; transform: translate(-50%, -30px);} 100% {opacity:1; transform: translate(-50%,0);} }
+
+/* Confetti canvas */
+#confetti-canvas {
+    position: fixed; bottom:0; left:0; width:100%; height:100%; pointer-events:none; z-index: 999;
+}
+</style>
+</head>
+<body>
+
+<div class="background-grid"></div>
+<div class="mouse-glow"></div>
+
+<header class="topbar">
+    <div class="nav-left">
+        <div class="logo">Metal drops</div>
+        <a href="index_home.html" class="nav-item">Home</a>
+        <a href="dashboard.html" class="nav-item">Dashboard</a>
+        <a href="index_code.html" class="nav-item">Code</a>
+    </div>
+    <div class="nav-right">
+        <div class="discord-profile">
+            <div class="avatar"></div>
+            <div class="username"></div>
+        </div>
+    </div>
+</header>
+
+<div class="redeem-container">
+    <h1>Redeem Your Code</h1>
+    <input type="text" id="redeemCode" placeholder="Enter code here"><br>
+    <button onclick="redeemCode()">Redeem</button>
+    <div id="account-counter" style="margin-top:10px; font-size:16px;">1/1 account available</div>
+</div>
+
+<canvas id="snow-canvas"></canvas>
+<canvas id="confetti-canvas"></canvas>
+
+<button class="power-by-exotic">Power by Exotic</button>
+<div class="black-hole-container"><div class="black-hole"></div></div>
+
+<script src="discord-accounts.js"></script>
+<script src="black-hole.js"></script>
+<script>
+const mouseGlow = document.querySelector('.mouse-glow');
+document.addEventListener('mousemove', (e) => {
+    mouseGlow.style.left = (e.clientX - 150) + 'px';
+    mouseGlow.style.top = (e.clientY - 150) + 'px';
+});
+
+// Discord profile
+function updateDiscordProfileFromLocal() {
+    const username = localStorage.getItem('discord_username');
+    const avatar = localStorage.getItem('discord_avatar');
+    const avatarEl = document.querySelector('.discord-profile .avatar');
+    const usernameEl = document.querySelector('.discord-profile .username');
+    if(avatarEl) avatarEl.style.backgroundImage = avatar ? `url(${avatar})` : '';
+    if(usernameEl && username) usernameEl.textContent = username;
+}
+document.addEventListener('DOMContentLoaded', updateDiscordProfileFromLocal);
+window.addEventListener('storage', (e) => {
+    if(e.key==='discord_username'||e.key==='discord_avatar') updateDiscordProfileFromLocal();
+});
+
+// Snow script (invariato)
+(function(){
+    const canvas = document.getElementById('snow-canvas');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let W,H; let flakes=[];
+    function initFlakes(){
+        flakes.length=0;
+        const FLAKE_COUNT = Math.max(80, Math.floor((W*H)/50000));
+        for(let i=0;i<FLAKE_COUNT;i++){
+            flakes.push({x:Math.random()*W, y:Math.random()*H, r:4+Math.random()*12, vx:(Math.random()-0.5)*0.3, vy:0.3+Math.random()*1.0, alpha:0.3+Math.random()*0.7, rotation: Math.random()*Math.PI*2, rotationSpeed:(Math.random()-0.5)*0.08});
+        }
+    }
+    function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; initFlakes();}
+    window.addEventListener('resize', resize);
+    resize();
+    let mouse={x:-9999,y:-9999, active:false};
+    window.addEventListener('mousemove',(e)=>{ mouse.x=e.clientX; mouse.y=e.clientY; mouse.active=true; });
+    window.addEventListener('mouseleave',()=>{ mouse.active=false; mouse.x=-9999; mouse.y=-9999; });
+    function step(){
+        ctx.clearRect(0,0,W,H);
+        for(let f of flakes){
+            if(mouse.active){
+                const dx=mouse.x-f.x, dy=mouse.y-f.y;
+                const dist=Math.sqrt(dx*dx+dy*dy);
+                const R=120+f.r*6;
+                if(dist<R && dist>0){ const force=(1-dist/R)*0.9; f.vx+=(dx/dist)*force; f.vy+=(dy/dist)*force*0.4;}
+            }
+            f.vx*=0.99; f.vy+=0.01; f.x+=f.vx; f.y+=f.vy;
+            if(f.x>W+10) f.x=-10; if(f.x<-10) f.x=W+10;
+            if(f.y>H+20){f.y=-10; f.x=Math.random()*W; f.vy=0.3+Math.random()*1.0; f.vx=(Math.random()-0.5)*0.4; f.rotation=Math.random()*Math.PI*2;}
+            f.rotation+=f.rotationSpeed;
+            ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rotation);
+            ctx.beginPath();
+            ctx.fillStyle='rgba(255,255,255,'+f.alpha+')';
+            ctx.moveTo(0,-f.r*1.2); ctx.lineTo(f.r*0.5,0); ctx.lineTo(0,f.r*1.2); ctx.lineTo(-f.r*0.5,0);
+            ctx.closePath(); ctx.fill();
+            ctx.restore();
+        }
+        requestAnimationFrame(step);
+    }
+    step();
+})();
+
+// Confetti logic
+function spawnConfetti(){
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let W = canvas.width = window.innerWidth;
+    let H = canvas.height = window.innerHeight;
+    let confetti = [];
+    function addConfetti(){
+        for(let i=0;i<150;i++){
+            confetti.push({
+                x: Math.random()*W,
+                y: H + Math.random()*50,
+                r: 5 + Math.random()*5,
+                color: `hsl(${Math.random()*360}, 100%, 50%)`,
+                vy: 2 + Math.random()*3,
+                vx: (Math.random()-0.5)*2,
+                rotation: Math.random()*360,
+                rotationSpeed: (Math.random()-0.5)*10
+            });
+        }
+    }
+    function animate(){
+        ctx.clearRect(0,0,W,H);
+        for(let c of confetti){
+            c.y -= c.vy;
+            c.x += c.vx;
+            c.rotation += c.rotationSpeed*Math.PI/180;
+            ctx.save();
+            ctx.translate(c.x,c.y);
+            ctx.rotate(c.rotation);
+            ctx.fillStyle = c.color;
+            ctx.fillRect(-c.r/2,-c.r/2,c.r,c.r);
+            ctx.restore();
+        }
+        confetti = confetti.filter(c=>c.y+ c.r>0);
+        requestAnimationFrame(animate);
+    }
+    addConfetti();
+    animate();
+}
+
+// Notifications
+function showNotification(msg){
+    const div = document.createElement('div');
+    div.className='notification';
+    div.textContent = msg;
+    document.body.appendChild(div);
+    setTimeout(()=>{div.remove();},3000);
+}
+
+// Redeem logic con limitazioni
+const correctCode = "1BOOSTER"; // codice corretto
+let codeRedeemed = false;
+let accountsTaken = 0;
+const maxAccounts = 2;
+
+function redeemCode(){
+    function redeemCode() {
+    const code = document.getElementById('redeemCode').value.trim();
+    if(code === "2BOOSTER") {
+        localStorage.setItem("redeemedCode", "2BOOSTER"); // salva il codice riscattato
+        alert("Code redeemed! You can now get 2 accounts per day.");
+    } else if(code) {
+        alert(`Code "${code}" is invalid!`);
+    } else {
+        alert("Please enter a code.");
+    }
+}
+
+
+    if(code !== correctCode){
+        showNotification("Incorrect code!");
+        return;
+    }
+
+    if(!codeRedeemed){
+        codeRedeemed = true;
+        accountsTaken = 1;
+        showNotification(`Code redeemed! You can now take up to 2 accounts.`);
+        spawnConfetti();
+    } else if(accountsTaken < maxAccounts){
+        accountsTaken++;
+        showNotification(`You have taken ${accountsTaken}/${maxAccounts} accounts!`);
+        spawnConfetti();
+    } else {
+        showNotification(`You already took all ${maxAccounts} accounts!`);
+        return;
+    }
+
+    // Aggiorna contatore
+    counter.textContent = `${accountsTaken}/${maxAccounts} accounts available`;
+}
+</script>
+</body>
+</html>
