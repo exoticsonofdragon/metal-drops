@@ -6,7 +6,7 @@
  */
 
 // Google Sheets CSV URL
-const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTOsVvZ3fuYqzgi_Npx1wDFvoIXGWtJw0UQ4B8sqCBFPKm3a0cMUDFTq-OK2mOPy25wTcrYqbOOHu3K/pub?output=csv';
+const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZjkI5CWCmpnphVeJRajq3A7ngqLVLGR-IoC_QfDkPHCDFOtpdQs6l294IvGBZWsOnCwTyxO0R1b8G/pub?output=csv';
 
 // Cache for sheet data
 let sheetsDataCache = null;
@@ -297,3 +297,4 @@ if (document.readyState === 'loading') {
 } else {
     initAccountModal();
 }
+
